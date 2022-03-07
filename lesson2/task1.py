@@ -86,7 +86,7 @@ def make_requests(prof_name, pages_count):
     responses = []
     for page in range(pages_count):
         # В словаре с параметрами задаем номер страницы
-        params['pages_count'] = page + 1
+        params['page'] = page + 1
         # Делаем запрос
         response = requests.get(url + suffix, params=params, headers=headers)
 

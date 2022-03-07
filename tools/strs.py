@@ -34,7 +34,7 @@ def get_number(s):
     :type s: str
     :rtype: int
     """
-    number_str = re.sub('[^a-zA-Z0-9 \n\.]', '', s)
+    number_str = re.sub('[^a-zA-Z0-9]', '', s)
     return convert_to_number(number_str)
 
 
