@@ -12,22 +12,62 @@ from bs4 import BeautifulSoup as BS
 import requests
 
 from tools.files import save_data_to_json, save_dicts_list_as_csv
-from tools.strs import has_numbers, get_number, get_letters
+from tools.strs import has_numbers, get_number, get_letters, convert_to_number, QUIT_SYMBOL
 
 
-def make_request():
+def prompt_prof_name():
+    """
+    Запрашивает у пользователя название профессии, пока будет введена непустая строка
+    или не будет введен специальный символ выхода из программы
+    :return: название профессии
+    :rtype: str
+    """
+    while True:
+        prof_name = input(f'Введите название должности ({QUIT_SYMBOL} для выхода): ')
+        # Если был введен символ выхода из цикла, то прекращаем запрос
+        if prof_name.lower() == QUIT_SYMBOL:
+            return None
+
+        # Если была введена пустая строка, то продолжаем запрашивать
+        if not prof_name.split():
+            print('Введите непустую строку')
+            continue
+
+        return prof_name
+
+
+def prompt_pages_count():
+    """
+    Запрашивает у пользователя число анализируемых страниц до тех пор, пока не будет введено корректное значение,
+    которое можно сконвертировать в int, или пока не будет введен специальный символ выхода из цикла
+    :return: количество анализируемых страниц на hh.ru
+    :rtype: int
+    """
+    while True:
+        pages_count_str = input(f'Введите количество анализируемых страниц ({QUIT_SYMBOL} для выхода): ')
+        # Если был введен символ выхода из цикла, то прекращаем запрос
+        if pages_count_str.lower() == QUIT_SYMBOL:
+            return None
+
+        # Пробуем сконвертировать введенную строку в int-число, если было введено некорректное значение, продолжаем
+        # запрашивать
+        pages_count = convert_to_number(pages_count_str)
+        if pages_count is None:
+            print('Введите целое число')
+            continue
+
+        return pages_count
+
+
+def make_request(prof_name, pages_count):
     """
     Запрашивает название должности и количество анализируемых страниц
     Делает запрос
     """
-    # Запрашиваем название должности
-    prof_name = input('Введите название должности: ')
-    # Запрашиваем число анализируемых страниц
-    # pages_count = int(input('Введите количество анализируемых страниц: '))
-
     # Адрес сайта
     url = 'https://hh.ru'
     suffix = '/search/vacancy'
+
     # Параметры запроса
     # С помощью item_on_page можно задавать количество отображаемых элементов на странице
     params = {'text': prof_name}
@@ -39,7 +79,7 @@ def make_request():
     return requests.get(url + suffix, params=params, headers=headers)
 
 
-def parse_response(response):
+def get_response_parsed(response):
     """
     Парсит ответ, полученный при запросе на сайт hh.ru
     Собирает список словарей, каждый словарь соответствует одной вакансии и содержит основную информацию о ней
@@ -63,15 +103,16 @@ def parse_response(response):
         tag_date = card.find('span', {'class': 'bloko-text bloko-text_tertiary'})
         # Блок с информацией о зарплате
         tag_salary = card.find('span', {'class': 'bloko-header-section-3'})
+        # Блок с локацией
+        tag_location = card.find('div', {'class': 'bloko-text bloko-text_no-top-indent'})
         # Парсим зарплату: минимальное, максимальное значение и валюта
         salary_min, salary_max, salary_curr = get_salary_parsed(tag_salary)
 
         # Собираем словарь для вакансии
         job_data = {
             'name': tag.text,
-            # Todo Надо очищать от спецсимволов названия
             'company': tag_company.text if tag_company else None,
-            'location': card.find('div', {'class': 'bloko-text bloko-text_no-top-indent'}).text,
+            'location': tag_location.text if tag_location else None,
             'salary_min': salary_min,
             'salary_max': salary_max,
             'salary_curr': salary_curr,
@@ -88,8 +129,8 @@ def parse_response(response):
 def get_salary_parsed(tag):
     """
     Парсит текст тэга, ищет информацию о зарплате и валюте
-    :param tag:
-    :type tag:
+    :param tag: тэг, который содержит информацию о зарплате
+    :type tag: Tag
     :return: возвращает кортеж из трех значений (минимальный уровень зарплаты, максимальный уровень зарплаты, валюта)
     :rtype: Tuple(float, float, str)
     """
@@ -98,7 +139,7 @@ def get_salary_parsed(tag):
 
     salary_str = tag.text
 
-    salary_arr = salary_str.split(' ')
+    salary_arr = [s.lower() for s in salary_str.split(' ')]
     if not salary_arr:
         return [None] * 3
 
@@ -127,14 +168,26 @@ def get_salary_parsed(tag):
 def main():
     """
     Основная функция
-    Делает запрос на сайт hh.ru, получает список вакансий на заданную специальность
-    Парсит ответ, собирает все вакансии в виде словаря с единый список
+    Запрашивает у пользователя название профессии и количество анализируемых страниц
+    Делает запрос на сайт hh.ru, получает список вакансий на заданную профессию
+    Парсит ответ, собирает все вакансии в виде списка словарей, где каждый словарь соответствует одной вакансии
+    и содержит основную информацию о ней
     Сохраняет полученный список в json и csv файл
     """
+    # Запрашиваем у пользователя название профессии для поиска вакансий
+    prof_name = prompt_prof_name()
+    if prof_name is None:
+        return
+
+    # Запрашиваем у пользователя количество анализируемых страниц
+    pages_count = prompt_pages_count()
+    if pages_count is None:
+        return
+
     # Делаем запрос
-    response = make_request()
+    response = make_request(prof_name, pages_count)
     # Парсим ответ
-    response_parsed = parse_response(response)
+    response_parsed = get_response_parsed(response)
     # Сохраняем ответ
     save_dicts_list_as_csv('result.csv', response_parsed)
     save_data_to_json('result.json', response_parsed)
