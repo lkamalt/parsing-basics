@@ -21,28 +21,21 @@ def get_letters(s):
     :type s: str
     :rtype: str
     """
-    letters = re.findall("[a-яА-яa-zA-Z]+", s)
-    try:
+    letters = re.findall('[a-яА-яa-zA-Z]+', s)
+    if letters:
         return letters[0].upper()
-    except Exception as e:
-        print(f'Не удалось извлечь буквы из строки {s}: {e}')
-        return None
 
 
 def get_number(s):
     """
     Возвращает число, извлеченное из заданной строки s
-    Число конвертируется во float
+    Число конвертируется в int
     :param s: анализируемая строка
     :type s: str
-    :rtype: float
+    :rtype: int
     """
     number_str = re.sub('[^a-zA-Z0-9 \n\.]', '', s)
-    try:
-        return float(number_str)
-    except Exception as e:
-        print(f'Не удалось извлечь числа из строки {s}: {e}')
-        return None
+    return convert_to_number(number_str)
 
 
 def convert_to_number(var_str, func=int, undef_value=None):

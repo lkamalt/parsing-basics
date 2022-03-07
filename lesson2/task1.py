@@ -188,7 +188,9 @@ def get_salary_parsed(tag):
     numbers = []
     for s in salary_arr:
         if has_numbers(s):
-            numbers.append(get_number(s))
+            number = get_number(s)
+            if number is not None:
+                numbers.append(number)
 
     # Если есть 'от', то задано только минимальное значение зарплаты [value, None]
     if 'от' in salary_str:
