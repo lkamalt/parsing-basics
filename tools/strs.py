@@ -34,7 +34,9 @@ def get_number(s):
     :type s: str
     :rtype: int
     """
+    # Убирает все символы, кроме букв и цифр
     number_str = re.sub('[^a-zA-Z0-9]', '', s)
+    # Пробуем сконвертировать в int
     return convert_to_number(number_str)
 
 
