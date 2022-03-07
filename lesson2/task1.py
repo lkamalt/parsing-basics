@@ -10,9 +10,9 @@
 # через pandas. Сохраните в json либо csv.
 from bs4 import BeautifulSoup as BS
 import requests
-import re
 
 from tools.files import save_data_to_json, save_dicts_list_as_csv
+from tools.strs import has_numbers, get_number, get_letters
 
 
 def make_request():
@@ -96,40 +96,32 @@ def get_salary_parsed(tag):
     if tag is None:
         return [None] * 3
 
-    def get_val():
-        try:
-            chars = re.findall("[a-яА-яa-zA-Z]+", salary_arr[-1])
-            return chars[0].upper()
-        except Exception as e:
-            return None
-
-    def has_numbers(s):
-        return bool(re.search(r'\d', s))
-
-    def get_number(s):
-        clear_s = re.sub('[^a-zA-Z0-9 \n\.]', '', s)
-        try:
-            return float(clear_s)
-        except Exception as e:
-            return None
-
     salary_str = tag.text
+
     salary_arr = salary_str.split(' ')
     if not salary_arr:
         return [None] * 3
+
+    # Пробуем извлечь валюту из строки
+    curr = get_letters(salary_arr[-1])
 
     numbers = []
     for s in salary_arr:
         if has_numbers(s):
             numbers.append(get_number(s))
 
+    # Если есть 'от', то задано только минимальное значение зарплаты [value, None]
     if 'от' in salary_str:
         numbers.append(None)
 
+    # Если есть 'до', то задано только максимальное значение зарплаты [None, value]
     if 'до' in salary_str:
         numbers.insert(0, None)
 
-    return *numbers, get_val()
+    if len(numbers) != 2:
+        return None, None, curr
+
+    return *numbers, curr
 
 
 def main():
