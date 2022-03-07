@@ -10,9 +10,11 @@
 # через pandas. Сохраните в json либо csv.
 from bs4 import BeautifulSoup as BS
 import requests
+import time
 
 from tools.files import save_data_to_json, save_dicts_list_as_csv
 from tools.strs import has_numbers, get_number, get_letters, convert_to_number, QUIT_SYMBOL
+from request_conf import USER_AGENT
 
 
 def prompt_prof_name():
@@ -59,10 +61,16 @@ def prompt_pages_count():
         return pages_count
 
 
-def make_request(prof_name, pages_count):
+def make_requests(prof_name, pages_count):
     """
-    Запрашивает название должности и количество анализируемых страниц
-    Делает запрос
+    Делает запрос на сайт hh.ru, получает список вакансий по заданной профессии prof_name, анализирует
+    page_count страниц
+    :param prof_name: название профессии
+    :type prof_name: str
+    :param pages_count: количество анализируемых страниц
+    :type pages_count: int
+    :return: список ответов на запрос по каждой странице
+    :rtype: List[requests.Response]
     """
     # Адрес сайта
     url = 'https://hh.ru'
@@ -72,11 +80,41 @@ def make_request(prof_name, pages_count):
     # С помощью item_on_page можно задавать количество отображаемых элементов на странице
     params = {'text': prof_name}
     # Заголовок запроса
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36'}
+    headers = {'User-Agent': USER_AGENT}
 
-    # Todo добавить задержку между запросами 1 sec, times.sleep(1)
-    # Делаем запрос
-    return requests.get(url + suffix, params=params, headers=headers)
+    # Список ответов, len(responses) = pages_count
+    responses = []
+    for page in range(pages_count):
+        # В словаре с параметрами задаем номер страницы
+        params['pages_count'] = page + 1
+        # Делаем запрос
+        response = requests.get(url + suffix, params=params, headers=headers)
+
+        # Записываем ответ в результирующем списке
+        responses.append(response)
+        # Делаем задержку между запросами в 1 секунду
+        time.sleep(1)
+
+    return responses
+
+
+def get_responses_parsed(responses):
+    """
+    Парсит ответы, полученные при запросе на сайт hh.ru
+    Каждый ответ соответствует одной странице
+    :param responses: список ответов на запрос
+    :type responses: List[requests.Response]
+    :return: список словарей, каждый словарь соответствует одной вакансии и содержит основную информацию о ней
+    :rtype: List[Dict]
+    """
+    # Общий список словарей с вакансиями из всех страниц
+    responses_parsed = []
+    for r in responses:
+        # Парсим один ответ
+        r_parsed = get_response_parsed(r)
+        # Объединяем полученный список словарей с общим
+        responses_parsed.extend(r_parsed)
+    return responses_parsed
 
 
 def get_response_parsed(response):
@@ -85,6 +123,7 @@ def get_response_parsed(response):
     Собирает список словарей, каждый словарь соответствует одной вакансии и содержит основную информацию о ней
     :param response: ответ на запрос
     :type response: requests.Response
+    :return: список словарей, каждый словарь соответствует одной вакансии и содержит основную информацию о ней
     :rtype: List[Dict]
     """
     dom = BS(response.text, 'html.parser')
@@ -184,13 +223,13 @@ def main():
     if pages_count is None:
         return
 
-    # Делаем запрос
-    response = make_request(prof_name, pages_count)
-    # Парсим ответ
-    response_parsed = get_response_parsed(response)
-    # Сохраняем ответ
-    save_dicts_list_as_csv('result.csv', response_parsed)
-    save_data_to_json('result.json', response_parsed)
+    # Делаем запросы, один ответ соответствует одной странице
+    responses = make_requests(prof_name, pages_count)
+    # Парсим ответы в список словарей с вакансиями
+    responses_parsed = get_responses_parsed(responses)
+    # Сохраняем список словарей с вакансиями
+    save_dicts_list_as_csv('result.csv', responses_parsed)
+    save_data_to_json('result.json', responses_parsed)
 
 
 # Вызов основной функции
