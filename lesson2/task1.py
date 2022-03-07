@@ -8,11 +8,11 @@
 # По желанию можно добавить ещё параметры вакансии (например, работодателя и расположение).
 # Структура должна быть одинаковая для вакансий с обоих сайтов. Общий результат можно вывести с помощью dataFrame
 # через pandas. Сохраните в json либо csv.
-import requests
-import pandas as pd
-import json
 from bs4 import BeautifulSoup as BS
+import requests
 import re
+
+from tools.files import save_data_to_json, save_dicts_list_as_csv
 
 
 def make_request():
@@ -85,32 +85,12 @@ def parse_response(response):
     return jobs
 
 
-def save_response_as_csv(response_parsed):
-    """
-    Сохраняет распарсенный ответ (список словарей) в виде таблицы csv
-    :param response_parsed:
-    :type response_parsed:
-    """
-    df = pd.json_normalize(response_parsed)
-    df.to_csv('result.csv', sep=';', encoding='utf8', index=False)
-
-
-def save_response_as_json(response_parsed):
-    """
-    Сохраняет распарсенный ответ (список словарей) в виде json
-    :param response_parsed:
-    :type response_parsed:
-    """
-    with open('result.json', 'w', encoding='utf8') as f:
-        json.dump(response_parsed, f)
-
-
 def get_salary_parsed(tag):
     """
     Парсит текст тэга, ищет информацию о зарплате и валюте
     :param tag:
     :type tag:
-    :return: возвращает кортеж из трех значений (минимальный уровень зарплаты, максимальны уровень зарплаты, валюта)
+    :return: возвращает кортеж из трех значений (минимальный уровень зарплаты, максимальный уровень зарплаты, валюта)
     :rtype: Tuple(float, float, str)
     """
     if tag is None:
@@ -164,8 +144,8 @@ def main():
     # Парсим ответ
     response_parsed = parse_response(response)
     # Сохраняем ответ
-    save_response_as_csv(response_parsed)
-    save_response_as_json(response_parsed)
+    save_dicts_list_as_csv('result.csv', response_parsed)
+    save_data_to_json('result.json', response_parsed)
 
 
 # Вызов основной функции
