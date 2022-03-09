@@ -14,7 +14,7 @@ import time
 
 from tools.files import save_data_to_json, save_dicts_list_as_csv
 from tools.strs import get_number, get_letters, convert_to_number, QUIT_SYMBOL
-from request_conf import USER_AGENT
+from config.request_conf import USER_AGENT
 
 
 def prompt_prof_name():
