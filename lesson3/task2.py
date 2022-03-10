@@ -44,14 +44,11 @@ def show_jobs_with_greater_salary(salary):
         jobs = db_jobs.jobs
 
         print(f'Список вакансий с зарплатой > {salary}:')
-        for job in jobs.find({}):
-            salary_min = job['salary_min']
-            salary_max = job['salary_max']
-            if (salary_min is not None and salary_min > salary) or (salary_max is not None and salary < salary_max):
-                # Очищаем строковые значения словаря от символа неразрывного пробела
-                clear_dict_from_nbsp(job)
-                # Выводим словарь в консоль
-                pprint(job)
+        for job in jobs.find({'$or': [{'salary_min': {'$gt': salary}}, {'salary_max': {'$gt': salary}}]}):
+            # Очищаем строковые значения словаря от символа неразрывного пробела
+            clear_dict_from_nbsp(job)
+            # Выводим словарь в консоль
+            pprint(job)
 
 
 def main():
