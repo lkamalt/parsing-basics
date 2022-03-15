@@ -40,6 +40,16 @@ def get_number(s):
     return convert_to_number(number_str)
 
 
+def remove_nbsp(s):
+    """
+    Удаляет символ неразрывного пробела в заданной строке s
+    :param s: анализируемая строка
+    :type s: str
+    :rtype: str
+    """
+    return s.replace(u'\u00A0', ' ')
+
+
 def convert_to_number(var_str, func=int, undef_value=None):
     """
     Конвертация строки в число такого типа, определяемого функцией приведения func
