@@ -5,16 +5,18 @@ import pandas as pd
 FILE_ENCODING = 'utf8'
 
 
-def save_data_to_json(file_name, data):
+def save_data_to_json(file_name, data, ensure_ascii=True):
     """
     Записывает данные data в файл по заданному пути file_name
     :param file_name: путь, по которому будет сохранен файл с данными data
     :type file_name: str
     :param data: сохраняемые данные
     :type data: typing.Any
+    :param ensure_ascii: экранировать ли не ASCII-символы
+    :type ensure_ascii: bool
     """
     with open(file_name, 'w', encoding=FILE_ENCODING) as f:
-        json.dump(data, f)
+        json.dump(data, f, ensure_ascii=ensure_ascii)
 
 
 def get_data_from_json(file_name):
