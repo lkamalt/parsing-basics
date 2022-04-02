@@ -114,7 +114,7 @@ class MailRuParser(BaseParser):
         """
         for link in links:
             try:
-                # Прасим письмо по ссылке
+                # Парсим письмо по ссылке
                 self._parse_card(link)
                 # Задержим на пару секунд
                 time.sleep(3)

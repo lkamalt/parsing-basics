@@ -6,30 +6,36 @@
 #   4) дата публикации.
 # 2. Сложить собранные новости в БД.
 import requests
-import pymongo
 import time
 from urllib.parse import urljoin
 from lxml import html
-from pprint import pprint
 
 from config.request_conf import USER_AGENT
-from config.mongo_conf import HOST, PORT
-from tools.mongo import add_item_to_collection, show_collection
-from tools.files import save_data_to_json
+from tools.base_parser import BaseParser
 
 
-class LentaRuParser:
+class LentaRuParser(BaseParser):
     """ Класс парсера новостного сайта lenta.ru """
 
     def __init__(self):
-        # Ссылка на новостной сайт, который будет парситься
-        self.main_url = 'https://lenta.ru/'
+        super().__init__()
         # Преобразованный для парсинга ответ
         self._dom = None
         # Ответ сайта
         self._response = None
-        # Результат - список словарей, каждый словарь соответствует одной новости и содержит информацию о ней
-        self._result = []
+
+    @property
+    def main_url(self):
+        # Ссылка на новостной сайт, который будет парситься
+        return 'https://lenta.ru/'
+
+    @property
+    def db_name(self):
+        return 'db_news'
+
+    @property
+    def collection_name(self):
+        return 'news'
 
     def _make_request(self, url):
         """
@@ -166,50 +172,13 @@ class LentaRuParser:
         self._parse_big_cards()
         self._parse_photo_cards()
 
-    def get_result(self):
-        """
-        Возвращает результат парсинга - список словарей, каждый словарь соответствует одной новости и содержит
-        информацию о ней
-        :rtype: List[Dict]
-        """
-        return self._result
-
-    def print_result(self):
-        """ Выводит результат парсинга в консоль - отображает список словарей """
-        for news in self._result:
-            pprint(news)
-
-    def save_result_to_db(self):
-        """ Добавляет собранные новости в базу данных MongoDB """
-        if not self._result:
-            return
-
-        with pymongo.MongoClient(HOST, port=PORT) as client:
-            # База данных для новостей
-            db_news = client.db_news
-            # Коллекция для новостей
-            news = db_news.news
-
-            # Добавляем новости в коллекцию
-            add_item_to_collection(self._result, news)
-            # Выводим коллекцию в консоль
-            show_collection(news)
-
-    def save_result_to_json(self, file_name):
-        """
-        Сохраняет результат в json-файле
-        :param file_name: название файла
-        :type file_name: str
-        """
-        if self._result:
-            save_data_to_json(file_name, self._result, ensure_ascii=False)
-
 
 if __name__ == '__main__':
     # Парсер
     parser = LentaRuParser()
     # Запускаем парсинг сайта
     parser.parse()
+
     # Добавляем полученный список новостей в базу данных
     parser.save_result_to_db()
     # Сохраняем результат парсинга (список словарей) в файл

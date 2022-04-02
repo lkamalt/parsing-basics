@@ -54,27 +54,34 @@ class BaseParser:
         for news in self._result:
             pprint(news)
 
-    def save_result_to_db(self):
+    def save_result_to_db(self, show_coll=False):
         """ Добавляет собранные данные в базу данных MongoDB """
         if not self._result:
             return
 
-        with pymongo.MongoClient(HOST, port=PORT) as client:
-            # База данных
-            db = client[self.db_name]
-            # Коллекция
-            collection = db[self.collection_name]
+        try:
+            with pymongo.MongoClient(HOST, port=PORT) as client:
+                # База данных
+                db = client[self.db_name]
+                # Коллекция
+                collection = db[self.collection_name]
 
-            # Добавляем объекты в коллекцию
-            add_item_to_collection(self._result, collection)
-            # Выводим коллекцию в консоль
-            show_collection(collection)
+                # Добавляем объекты в коллекцию
+                add_item_to_collection(self._result, collection)
 
-    def save_result_to_json(self, file_name):
+                if show_coll:
+                    # Выводим коллекцию в консоль
+                    show_collection(collection)
+        except Exception as e:
+            print(f'Не удалось сохранить в базу данных: {str(e)}')
+
+    def save_result_to_json(self, file_name, ensure_ascii=False):
         """
         Сохраняет результат в json-файле
         :param file_name: название файла
         :type file_name: str
+        :param ensure_ascii: экранировать ли не ASCII-символы
+        :type ensure_ascii: bool
         """
         if self._result:
-            save_data_to_json(file_name, self._result, ensure_ascii=False)
+            save_data_to_json(file_name, self._result, ensure_ascii=ensure_ascii)
