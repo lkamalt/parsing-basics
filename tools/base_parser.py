@@ -73,7 +73,7 @@ class BaseParser:
                     # Выводим коллекцию в консоль
                     show_collection(collection)
         except Exception as e:
-            print(f'Не удалось сохранить в базу данных: {str(e)}')
+            print(f'Не удалось установить соединение с базой данных MongoDB: {str(e)}')
 
     def save_result_to_json(self, file_name, ensure_ascii=False):
         """

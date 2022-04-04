@@ -59,52 +59,56 @@ class MailRuParser(BaseParser):
         Собирает список ссылок, каждая из которых соответствует одному письму
         :rtype: List[str]
         """
-        self._driver.get(self.main_url)
-
-        # Снимаем галочку с Запомнить
-        chb_save_auth = self._get_clickable_elem(By.CLASS_NAME, 'save-auth-field-wrap')
-        chb_save_auth.click()
-
-        # Вводим логин
-        txt_login = self._driver.find_element(By.CLASS_NAME, 'input-0-2-77')
-        txt_login.send_keys(LOGIN)
-
-        # Нажимаем на кнопку Ввести пароль
-        btn_submit = self._driver.find_element(By.CLASS_NAME, 'submit-button-wrap')
-        btn_submit.click()
-
-        # Вводим пароль
-        txt_password = self._get_visible_elem(By.NAME, 'password')
-        txt_password.send_keys(PASSWORD)
-
-        # Нажимаем войти
-        btn_submit = self._driver.find_element(By.CLASS_NAME, 'submit-button-wrap')
-        btn_submit.click()
-
-        # Ждем пока прогрузится первое письмо
-        elem = self._get_visible_elem(By.XPATH, '//a[contains(@class, "js-letter-list-item")]')
-
         # Список ссылок писем, делаем его множеством, чтобы исключить дубли
         links = set()
-        while True:
-            # Список веб-элементов, соответствующих письмам: List[selenium.webdriver.remote.webelement.WebElement]
-            letters = self._driver.find_elements(By.XPATH, '//a[contains(@class, "js-letter-list-item")]')
-            # Извлекаем ссылки из веб-элементов, также превращаем его в множество, чтобы не было дублей
-            links_subset = set([letter.get_attribute('href') for letter in letters])
-            # Если собрали все ссылки, то выходим из цикла
-            if links_subset.issubset(links):
-                break
+        try:
+            self._driver.get(self.main_url)
 
-            # Добавляем новые ссылки в общий список
-            links.update(links_subset)
+            # Снимаем галочку с Запомнить
+            chb_save_auth = self._get_clickable_elem(By.CLASS_NAME, 'save-auth-field-wrap')
+            chb_save_auth.click()
 
-            actions = ActionChains(self._driver)
-            actions.move_to_element(letters[-1])
-            actions.perform()
+            # Вводим логин
+            txt_login = self._driver.find_element(By.CLASS_NAME, 'input-0-2-77')
+            txt_login.send_keys(LOGIN)
 
-            time.sleep(3)
+            # Нажимаем на кнопку Ввести пароль
+            btn_submit = self._driver.find_element(By.CLASS_NAME, 'submit-button-wrap')
+            btn_submit.click()
 
-        return list(links)
+            # Вводим пароль
+            txt_password = self._get_visible_elem(By.NAME, 'password')
+            txt_password.send_keys(PASSWORD)
+
+            # Нажимаем войти
+            btn_submit = self._driver.find_element(By.CLASS_NAME, 'submit-button-wrap')
+            btn_submit.click()
+
+            # Ждем пока прогрузится первое письмо
+            elem = self._get_visible_elem(By.XPATH, '//a[contains(@class, "js-letter-list-item")]')
+
+            while True:
+                # Список веб-элементов, соответствующих письмам: List[selenium.webdriver.remote.webelement.WebElement]
+                letters = self._driver.find_elements(By.XPATH, '//a[contains(@class, "js-letter-list-item")]')
+                # Извлекаем ссылки из веб-элементов, также превращаем его в множество, чтобы не было дублей
+                links_subset = set([letter.get_attribute('href') for letter in letters])
+                # Если собрали все ссылки, то выходим из цикла
+                if links_subset.issubset(links):
+                    break
+
+                # Добавляем новые ссылки в общий список
+                links.update(links_subset)
+
+                actions = ActionChains(self._driver)
+                actions.move_to_element(letters[-1])
+                actions.perform()
+
+                time.sleep(3)
+
+        except Exception as e:
+            print('Ошибка при сборе ссылок писем: ', str(e))
+        finally:
+            return list(links)
 
     def _parse_letters_links(self, links):
         """
@@ -176,7 +180,7 @@ if __name__ == '__main__':
     # Запускаем парсинг сайта
     parser.parse()
 
-    # Добавляем полученный список писем в базу данных
-    parser.save_result_to_db()
     # Сохраняем результат парсинга (список словарей) в файл
     parser.save_result_to_json('letters.json')
+    # Добавляем полученный список писем в базу данных
+    parser.save_result_to_db()
