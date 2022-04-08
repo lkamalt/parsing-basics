@@ -7,6 +7,7 @@
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
 from pymongo import MongoClient
+import json
 
 from tools.config import HOST, PORT
 from tools.str_processing import get_number, get_letters
@@ -16,12 +17,18 @@ class JobParserPipeline:
     def __init__(self):
         client = MongoClient(HOST, PORT)
         self.db_mongo = client.vacancies
-        pass
+        self._vacancies = []
+
+    def close_spider(self, spider):
+        with open(f'{spider.name}_vacancies.json', 'w', encoding='utf-8') as f:
+            json.dump(self._vacancies, f, ensure_ascii=False)
 
     def process_item(self, item, spider):
         if spider.name == 'hhru':
             item['salary_min'], item['salary_max'], item['salary_curr'] = self.process_salary(item['salary'])
             del item['salary']
+
+        self._vacancies.append(ItemAdapter(item).asdict())
 
         collection = self.db_mongo[spider.name]
         collection.insert_one(item)
