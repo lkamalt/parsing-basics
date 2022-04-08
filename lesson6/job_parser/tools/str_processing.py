@@ -1,3 +1,4 @@
+from unicodedata import category
 import re
 
 
@@ -49,3 +50,13 @@ def get_letters(s):
     letters = re.findall('[a-яА-яa-zA-Z]+', s)
     if letters:
         return letters[0]
+
+
+def get_cleaned_from_spaces(s):
+    """
+    Возвращает строку, очищенную от пробелов
+    :param s: анализируемая строка
+    :type s: str
+    :rtype: str
+    """
+    return ''.join(ch for ch in s if category(ch)[0] != 'Z')

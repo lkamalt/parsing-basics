@@ -10,7 +10,7 @@ from pymongo import MongoClient
 import json
 
 from tools.config import HOST, PORT
-from tools.str_processing import get_number, get_letters
+from tools.str_processing import get_number, get_letters, get_cleaned_from_spaces
 
 
 class JobParserPipeline:
@@ -28,9 +28,14 @@ class JobParserPipeline:
             json.dump(self._vacancies, f, ensure_ascii=False)
 
     def process_item(self, item, spider):
-        if spider.name == 'hhru':
-            item['salary_min'], item['salary_max'], item['salary_curr'] = self.process_salary(item['salary'])
-            del item['salary']
+        # Функция для парсинга зарплаты
+        process_salary_func = self.process_hh_salary
+        if spider.name == 'sjru':
+            process_salary_func = self.process_sj_salary
+            item['name'] = ''.join(item['name'])
+
+        item['salary_min'], item['salary_max'], item['salary_curr'] = process_salary_func(item['salary'])
+        del item['salary']
 
         # Сохраняем вакансию в словаре для записи в файл
         self._vacancies.append(ItemAdapter(item).asdict())
@@ -44,7 +49,7 @@ class JobParserPipeline:
 
         return item
 
-    def process_salary(self, salary):
+    def process_hh_salary(self, salary):
         if not salary:
             return [None] * 3
 
@@ -70,5 +75,39 @@ class JobParserPipeline:
                 salary_numbers.insert(0, None)
 
         salary_curr = get_letters(salary_clean[max_number_idx + 1]).upper()
+
+        return *salary_numbers, salary_curr
+
+    def process_sj_salary(self, salary):
+        if not salary:
+            return [None] * 3
+
+        salary_clean = [get_cleaned_from_spaces(s).lower() for s in salary if s.split()]
+
+        salary_numbers = []
+        max_number_idx = 0
+        for idx, s in enumerate(salary_clean):
+            number = get_number(s)
+            if number is not None:
+                max_number_idx = idx
+                salary_numbers.append(number)
+
+        if not salary_numbers:
+            return [None] * 3
+
+        if len(salary_numbers) == 1:
+            # Если есть 'от', то задано только минимальное значение зарплаты [value, None]
+            if 'от' in salary_clean:
+                salary_numbers.append(None)
+            # Если есть 'до', то задано только максимальное значение зарплаты [None, value]
+            elif 'до' in salary_clean:
+                salary_numbers.insert(0, None)
+            else:
+                salary_numbers.insert(0, None)
+                max_number_idx += 1
+        else:
+            max_number_idx += 1
+
+        salary_curr = get_letters(salary_clean[max_number_idx]).upper()
 
         return *salary_numbers, salary_curr
