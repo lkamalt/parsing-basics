@@ -8,10 +8,12 @@
 from itemadapter import ItemAdapter
 from pymongo import MongoClient
 
+from tools.config import HOST, PORT
+
 
 class JobParserPipeline:
     def __init__(self):
-        client = MongoClient('127.0.0.1', 27017)
+        client = MongoClient(HOST, PORT)
         self.db_mongo = client.vacancies
         pass
 
