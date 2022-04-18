@@ -4,9 +4,13 @@
 # https://docs.scrapy.org/en/latest/topics/items.html
 
 import scrapy
+from itemloaders.processors import MapCompose, TakeFirst
+from tools.str_processing import get_number
 
 
 class ProductsParserItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
+    name = scrapy.Field(output_processor=TakeFirst())
+    price = scrapy.Field(output_processor=TakeFirst(), input_processor=MapCompose(get_number))
+    link = scrapy.Field(output_processor=TakeFirst())
+    photos = scrapy.Field()
+    _id = scrapy.Field()
