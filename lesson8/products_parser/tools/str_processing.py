@@ -26,7 +26,7 @@ def convert_to_number(var_str, func=int, undef_value=None):
         return undef_value
 
 
-def get_number(s):
+def get_int_number(s):
     """
     Возвращает число, извлеченное из заданной строки s
     Число конвертируется в int
@@ -38,6 +38,20 @@ def get_number(s):
     number_str = re.sub('[^0-9]', '', s)
     # Пробуем сконвертировать в int
     return convert_to_number(number_str)
+
+
+def get_float_number(s):
+    """
+    Возвращает вещественное число, извлеченное из заданной строки s
+    Число конвертируется в float
+    :param s: анализируемая строка
+    :type s: str
+    :rtype: float
+    """
+    # Все символы, которые не числа заменяет на пустую строку
+    number_str = re.sub('[^0-9,]', '', s).replace(',', '.')
+    # Пробуем сконвертировать во float
+    return convert_to_number(number_str, float)
 
 
 def get_letters(s):
