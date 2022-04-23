@@ -7,3 +7,5 @@ venv
 login_data.py
 
 **/*.json
+**/*.jpg
+**/*.7z
